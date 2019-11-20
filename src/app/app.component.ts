@@ -76,6 +76,7 @@ export class SierpinskiTriangle {
 export class AppComponent implements OnInit,
     OnDestroy {
   intervalCleanup: any;
+  rAFCleanup: any;
   start = new Date().getTime();
 
   seconds = 0;
@@ -83,18 +84,24 @@ export class AppComponent implements OnInit,
 
   constructor(private _sanitizer: DomSanitizer) {}
 
-  update() {
+  updateScale() {
     const elapsed = new Date().getTime() - this.start;
     const t = (elapsed / 1000) % 10;
     const scale = 1 + (t > 5 ? 10 - t : t) / 10;
     this.transform = this._sanitizer.bypassSecurityTrustStyle(
         `scaleX(${scale / 2.1}) scaleY(0.7) translateZ(0.1px)`);
-    this.seconds = (this.seconds % 10) + 1;
+    this.rAFCleanup = requestAnimationFrame(() => { this.updateScale(); });
   }
+
+  updateSeconds() { this.seconds = (this.seconds % 10) + 1; }
 
   ngOnInit() {
-    this.intervalCleanup = setInterval(() => { this.update(); }, 1000);
+    this.updateScale();
+    this.intervalCleanup = setInterval(() => { this.updateSeconds(); }, 1000);
   }
 
-  ngOnDestroy() { clearInterval(this.intervalCleanup); }
+  ngOnDestroy() {
+    cancelAnimationFrame(this.rAFCleanup);
+    clearInterval(this.intervalCleanup);
+  }
 }
